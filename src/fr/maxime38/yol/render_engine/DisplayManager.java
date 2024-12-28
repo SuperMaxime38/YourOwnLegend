@@ -37,6 +37,8 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.nio.IntBuffer;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -45,14 +47,16 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
+import fr.maxime38.yol.entities.Entity;
 import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
 import fr.maxime38.yol.textures.ModelTexture;
+import fr.maxime38.yol.utils.Vector3f;
 
 public class DisplayManager {
 	private static Loader loader;
-	private static TexturedModel model;
+	private static Entity entity;
 	private static StaticShader shader;
 	
 	// The window handle
@@ -61,7 +65,7 @@ public class DisplayManager {
 		private static GLFWKeyCallback keyCallback;
 
 		public static void run() {
-			System.out.println("Hello LWJGL " + Version.getVersion() + "!");
+			System.out.println("["+Calendar.getInstance(TimeZone.getDefault()).getTime() + "]: Hello LWJGL " + Version.getVersion() + "!");
 
 			init();
 			loop();
@@ -81,7 +85,7 @@ public class DisplayManager {
 			glfwTerminate();
 			glfwSetErrorCallback(null).free();
 			
-			System.out.println("Closed the game");
+			System.out.println("["+Calendar.getInstance(TimeZone.getDefault()).getTime() + "]: Closed the game");
 			System.exit(0);
 		}
 
@@ -192,20 +196,23 @@ public class DisplayManager {
 			
 			RawModel raw_model = loader.loadToVao(vertices, indices, UVs);
 			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
-			model = new TexturedModel(raw_model, texture);
-			
+			TexturedModel model = new TexturedModel(raw_model, texture);
+			entity = new Entity(model, new Vector3f(0,0,0), 0, 0, 0, 1);
 
 			shader = new StaticShader();
 			
 		}
 		
 		public static void displayStuff() {
-			render(model);
+			entity.increasePosition(0, 0, 0);
+			entity.increaseScale(0.0005f);
+			entity.increaseRotation(0.001f, 0.001f, 4f);
+			render(entity, shader);
 		}
 		
 		
-		public static void render(TexturedModel model) {
-			EntityRenderer.render(model);
+		public static void render(Entity entity, StaticShader shader) {
+			EntityRenderer.render(entity, shader);
 		}
 		
 		

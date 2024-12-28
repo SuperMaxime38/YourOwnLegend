@@ -10,13 +10,15 @@ public class Maths {
 		
 		Matrix4f.translate(translation, matrix, matrix);
 		
-		Matrix4f.rotate(rotaX, new Vector3f(1, 0, 0), matrix, matrix);
-		Matrix4f.rotate(rotaY, new Vector3f(0, 1, 0), matrix, matrix);
-		Matrix4f.rotate(rotaZ, new Vector3f(0, 0, 1), matrix, matrix);
+		Matrix4f.rotate((float) Math.toRadians(rotaX), new Vector3f(1, 0, 0), matrix, matrix);
+		Matrix4f.rotate((float) Math.toRadians(rotaY), new Vector3f(0, 1, 0), matrix, matrix);
+		Matrix4f.rotate((float) Math.toRadians(rotaZ), new Vector3f(0, 0, 1), matrix, matrix);
 		
 		Matrix4f.scale(new Vector3f(scale, scale, scale), matrix, matrix);
 		
 		return matrix;
 	}
+	
+	
 	
 }
