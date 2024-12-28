@@ -9,18 +9,21 @@ import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
 import fr.maxime38.yol.models.RawModel;
+import fr.maxime38.yol.textures.Texture;
 
 public class Loader {
 
 	static List<Integer> vaos = new ArrayList<Integer>();
 	static List<Integer> vbos = new ArrayList<Integer>();
+	static List<Integer> textures = new ArrayList<Integer>();
 	
-	public RawModel loadToVao(float[] vertices, int[] indices) {
+	public RawModel loadToVao(float[] vertices, int[] indices, float[] UVs) {
 		int vaoID = createVAO();
 
 		vaos.add(vaoID);
 
 		storeDataInAttributeList(vertices, 0, 3);
+		storeDataInAttributeList(UVs, 1, 2);
 		bindIndicesBuffer(indices);
 		GL30.glBindVertexArray(0);
 		
@@ -54,12 +57,22 @@ public class Loader {
 		
 	}
 	
+	public int loadTexture(String fileName) {
+		Texture texture = new Texture(fileName);
+		int ID = texture.getID();
+		textures.add(ID);
+		return ID;
+	}
+	
 	public void cleanUp() {
 		for(int vao : vaos) {
 			GL30.glDeleteVertexArrays(vao);
 		}
 		for(int vbo : vbos) {
 			GL15.glDeleteBuffers(vbo);
+		}
+		for(int texture : textures) {
+			GL11.glDeleteTextures(texture);
 		}
 	}
 }

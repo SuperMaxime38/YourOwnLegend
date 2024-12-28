@@ -46,11 +46,13 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
 import fr.maxime38.yol.models.RawModel;
+import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
+import fr.maxime38.yol.textures.ModelTexture;
 
 public class DisplayManager {
 	private static Loader loader;
-	private static RawModel model;
+	private static TexturedModel model;
 	private static StaticShader shader;
 	
 	// The window handle
@@ -78,6 +80,8 @@ public class DisplayManager {
 			// Terminate GLFW and free the error callback
 			glfwTerminate();
 			glfwSetErrorCallback(null).free();
+			
+			System.out.println("Closed the game");
 			System.exit(0);
 		}
 
@@ -179,7 +183,16 @@ public class DisplayManager {
 				2,3,0
 			};
 			
-			model = loader.loadToVao(vertices, indices);
+			float[] UVs = {
+					0,0,
+					0,1,
+					1,1,
+					1,0
+			};
+			
+			RawModel raw_model = loader.loadToVao(vertices, indices, UVs);
+			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
+			model = new TexturedModel(raw_model, texture);
 			
 
 			shader = new StaticShader();
@@ -187,11 +200,11 @@ public class DisplayManager {
 		}
 		
 		public static void displayStuff() {
-			DisplayManager.render(model);
+			render(model);
 		}
 		
 		
-		public static void render(RawModel model) {
+		public static void render(TexturedModel model) {
 			EntityRenderer.render(model);
 		}
 		

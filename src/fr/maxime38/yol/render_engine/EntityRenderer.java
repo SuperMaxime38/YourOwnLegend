@@ -1,18 +1,25 @@
 package fr.maxime38.yol.render_engine;
 
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
-import fr.maxime38.yol.models.RawModel;
+import fr.maxime38.yol.models.TexturedModel;
 
 public class EntityRenderer {
 	
-	public static void render(RawModel model) {
-		GL30.glBindVertexArray(model.getVaoID());
+	public static void render(TexturedModel model) {
+		GL30.glBindVertexArray(model.getModel().getVaoID());
 		GL20.glEnableVertexAttribArray(0);
-		GL11.nglDrawElements(GL11.GL_TRIANGLES, model.getVertexCount(), GL11.GL_UNSIGNED_INT, 0);
+		GL20.glEnableVertexAttribArray(1);
+		
+		GL13.glActiveTexture(GL13.GL_TEXTURE0);
+		GL11.glBindTexture(GL11.GL_TEXTURE_2D, model.getTexture().getTextureID());
+		
+		GL11.nglDrawElements(GL11.GL_TRIANGLES, model.getModel().getVertexCount(), GL11.GL_UNSIGNED_INT, 0);
 		GL20.glDisableVertexAttribArray(0);
+		GL20.glDisableVertexAttribArray(1);
 		GL30.glBindVertexArray(0);
 	}
 }
