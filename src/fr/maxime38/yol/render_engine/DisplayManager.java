@@ -52,12 +52,23 @@ import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
 import fr.maxime38.yol.textures.ModelTexture;
+import fr.maxime38.yol.utils.Matrix4f;
 import fr.maxime38.yol.utils.Vector3f;
 
 public class DisplayManager {
 	private static Loader loader;
 	private static Entity entity;
 	private static StaticShader shader;
+	
+	
+	//Projection Matrix data
+	static Matrix4f projectionMatrix;
+	private static final float FOV = 70f;
+	private static final float NEAR_PLANE = 0.1f;
+	private static final float FAR_PLANE = 10000f;
+	private static int width = 1200;
+	private static int height = 700;
+	
 	
 	// The window handle
 		private static long window;
@@ -172,6 +183,17 @@ public class DisplayManager {
 			GL.createCapabilities();
 			
 			
+			
+			//Load the shader
+			shader = new StaticShader();
+			
+			
+			//Create the projection Matrix (for the 3D)
+			createProjectionMatrix();
+			shader.start();
+			shader.loadProjectionMatrix(projectionMatrix);
+			shader.stop();
+			
 			//Init rendering of stuff
 			loader = new Loader();
 			float[] vertices = {
@@ -197,22 +219,38 @@ public class DisplayManager {
 			RawModel raw_model = loader.loadToVao(vertices, indices, UVs);
 			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
 			TexturedModel model = new TexturedModel(raw_model, texture);
-			entity = new Entity(model, new Vector3f(0,0,0), 0, 0, 0, 1);
+			entity = new Entity(model, new Vector3f(0,0,-1), 0, 0, 0, 1);
 
-			shader = new StaticShader();
 			
 		}
 		
 		public static void displayStuff() {
-			entity.increasePosition(0, 0, 0);
-			entity.increaseScale(0.0005f);
-			entity.increaseRotation(0.001f, 0.001f, 4f);
+			//entity.increasePosition(0, 0, 0);
+			//entity.increaseScale(0.0005f);
+			//entity.increaseRotation(0.001f, 0.001f, 4f);
 			render(entity, shader);
 		}
 		
 		
 		public static void render(Entity entity, StaticShader shader) {
 			EntityRenderer.render(entity, shader);
+		}
+		
+		public static void createProjectionMatrix() {
+			projectionMatrix = new Matrix4f();
+			
+			float aspect_ratio = (float) width/ (float) height;
+			float yScale = (float) (1f / Math.tan(Math.toRadians(FOV/2f)));
+			float xScale = yScale / aspect_ratio;
+			float zp = FAR_PLANE + NEAR_PLANE;
+			float zm = FAR_PLANE - NEAR_PLANE;
+
+			projectionMatrix.m00 = xScale;
+			projectionMatrix.m11 = yScale;
+			projectionMatrix.m22 = -zp/zm;
+			projectionMatrix.m23 = -1;
+			projectionMatrix.m32 = -(2*FAR_PLANE*NEAR_PLANE)/zm;
+			projectionMatrix.m33 = 0; //just to be safe
 		}
 		
 		
