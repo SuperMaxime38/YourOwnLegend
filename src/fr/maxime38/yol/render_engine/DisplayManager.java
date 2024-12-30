@@ -1,34 +1,7 @@
 package fr.maxime38.yol.render_engine;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
-import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_E;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
-import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
-import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
-import static org.lwjgl.glfw.GLFW.GLFW_SOFT_FULLSCREEN;
-import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
-import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
-import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
-import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
-import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
-import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
-import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
-import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
-import static org.lwjgl.glfw.GLFW.glfwInit;
-import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
-import static org.lwjgl.glfw.GLFW.glfwPollEvents;
-import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwShowWindow;
-import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
-import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
-import static org.lwjgl.glfw.GLFW.glfwTerminate;
-import static org.lwjgl.glfw.GLFW.glfwWindowHint;
-import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
+import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.glClear;
@@ -47,6 +20,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.MemoryStack;
 
+import fr.maxime38.yol.entities.Camera;
 import fr.maxime38.yol.entities.Entity;
 import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
@@ -64,6 +38,8 @@ public class DisplayManager {
 	//Handles keys
 	public static KeyHandler keyHandler;
 	
+	//Camera
+	static Camera camera;
 	
 	//Projection Matrix data
 	static Matrix4f projectionMatrix;
@@ -95,7 +71,6 @@ public class DisplayManager {
 			// Free the window callbacks and destroy the window
 			glfwFreeCallbacks(window);
 			glfwDestroyWindow(window);
-
 			// Terminate GLFW and free the error callback
 			glfwTerminate();
 			glfwSetErrorCallback(null).free();
@@ -123,11 +98,16 @@ public class DisplayManager {
 			window = glfwCreateWindow(1200, 700, "DevMode | Your Own Legend", NULL, NULL);
 			if ( window == NULL )
 				throw new RuntimeException("Failed to create the GLFW window");
+			
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 			// Setup a key callback. It will be called every time a key is pressed, repeated or released.
 			// ------------ HANDLE key event ------------ //
 			
 			keyHandler = new KeyHandler();
+			
+			camera = new Camera(window, keyHandler, new Vector3f(0, 0, 0), 0, 0, 0);
+			
 			
 			glfwSetKeyCallback(window, keyHandler.getCallback());
 
@@ -175,6 +155,7 @@ public class DisplayManager {
 			//Create the projection Matrix (for the 3D)
 			createProjectionMatrix();
 			shader.start();
+			shader.loadViewMatrix(camera);
 			shader.loadProjectionMatrix(projectionMatrix);
 			shader.stop();
 			
@@ -255,6 +236,7 @@ public class DisplayManager {
 			// Run the rendering loop until the user has attempted to close
 			// the window or has pressed the ESCAPE key.
 			while ( !glfwWindowShouldClose(window) ) {
+				
 				if(System.nanoTime() - timepassed >= 1000000000) {
 					timepassed = System.nanoTime();
 					System.out.println("FPS > "+fps);
@@ -262,8 +244,14 @@ public class DisplayManager {
 				}
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 				
+				//Move camera
+				camera.move();
+				
 				//Shaders
 				shader.start();
+				
+				//Load camera view
+				shader.loadViewMatrix(camera);
 				
 				//display 2D/3D i guess stuff onto the screen
 				displayStuff();

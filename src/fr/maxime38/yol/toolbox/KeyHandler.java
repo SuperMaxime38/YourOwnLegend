@@ -30,7 +30,6 @@ public class KeyHandler {
 		    			System.out.println("Game closed by user (ESCAPE_KEY)");
 		    			break;
 		    		case GLFW_KEY_W:
-		    			//System.out.println("AVANCER");
 		    			break;
 		    		case GLFW_KEY_E:
 		    			System.out.println("Opened inv");
