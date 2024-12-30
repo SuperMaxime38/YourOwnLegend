@@ -178,7 +178,7 @@ public class DisplayManager {
 					0,0,
 					0,1,
 					1,1,
-					1,0
+					1,0,
 			};
 			
 			RawModel raw_model = loader.loadToVao(vertices, indices, UVs);
