@@ -52,6 +52,7 @@ import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
 import fr.maxime38.yol.textures.ModelTexture;
+import fr.maxime38.yol.toolbox.KeyHandler;
 import fr.maxime38.yol.utils.Matrix4f;
 import fr.maxime38.yol.utils.Vector3f;
 
@@ -59,6 +60,9 @@ public class DisplayManager {
 	private static Loader loader;
 	private static Entity entity;
 	private static StaticShader shader;
+	
+	//Handles keys
+	public static KeyHandler keyHandler;
 	
 	
 	//Projection Matrix data
@@ -122,30 +126,10 @@ public class DisplayManager {
 
 			// Setup a key callback. It will be called every time a key is pressed, repeated or released.
 			// ------------ HANDLE key event ------------ //
-			glfwSetKeyCallback(window, keyCallback = new GLFWKeyCallback() {
-
-			    @Override
-			    public void invoke(long window, int key, int scancode, int action, int mods) {
-			    	
-			    	if(action == GLFW_PRESS) {
-			    		switch(key) {
-			    		case GLFW_KEY_ESCAPE:
-			    			glfwSetWindowShouldClose(window, true);
-			    			System.out.println("Game closed by user (ESCAPE_KEY)");
-			    			break;
-			    		case GLFW_KEY_E:
-			    			System.out.println("Opened inv");
-			    			break;
-			    		case GLFW_KEY_SPACE:
-			    			System.out.println("jumped ! yay");
-			    			break;
-			    		}
-			    	}
-			    }
-			    
-			    
-			    
-			});
+			
+			keyHandler = new KeyHandler();
+			
+			glfwSetKeyCallback(window, keyHandler.getCallback());
 
 			// Get the thread stack and push a new frame
 			try ( MemoryStack stack = stackPush() ) {
@@ -225,9 +209,9 @@ public class DisplayManager {
 		}
 		
 		public static void displayStuff() {
-			//entity.increasePosition(0, 0, 0);
-			//entity.increaseScale(0.0005f);
-			//entity.increaseRotation(0.001f, 0.001f, 4f);
+			entity.increasePosition(0, 0, 0f);
+			entity.increaseScale(0f);
+			entity.increaseRotation(0f, 0f, 0f);
 			render(entity, shader);
 		}
 		
