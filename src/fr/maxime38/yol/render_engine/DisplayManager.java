@@ -1,7 +1,32 @@
 package fr.maxime38.yol.render_engine;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
-import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR;
+import static org.lwjgl.glfw.GLFW.GLFW_CURSOR_DISABLED;
+import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
+import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
+import static org.lwjgl.glfw.GLFW.GLFW_SOFT_FULLSCREEN;
+import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
+import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
+import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
+import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
+import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
+import static org.lwjgl.glfw.GLFW.glfwGetPrimaryMonitor;
+import static org.lwjgl.glfw.GLFW.glfwGetVideoMode;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
+import static org.lwjgl.glfw.GLFW.glfwInit;
+import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
+import static org.lwjgl.glfw.GLFW.glfwPollEvents;
+import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetInputMode;
+import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
+import static org.lwjgl.glfw.GLFW.glfwShowWindow;
+import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
+import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
+import static org.lwjgl.glfw.GLFW.glfwTerminate;
+import static org.lwjgl.glfw.GLFW.glfwWindowHint;
+import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.glClear;
@@ -10,7 +35,10 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 import java.util.TimeZone;
 
 import org.lwjgl.Version;
@@ -33,14 +61,20 @@ import fr.maxime38.yol.utils.Vector3f;
 
 public class DisplayManager {
 	private static Loader loader;
-	private static Entity entity;
 	private static StaticShader shader;
+	
+	//World
+	private static TexturedModel model;
+	private static List<Entity> entities;
+	private static List<Vector3f> usedCoords;
+	private static final int RENDER_DISTANCE = 32; //32 blocks dude (PS: c'est un rayon)
 	
 	//Handles keys
 	public static KeyHandler keyHandler;
 	
 	//Camera
 	static Camera camera;
+	static Vector3f camPos;
 	
 	//Projection Matrix data
 	static Matrix4f projectionMatrix;
@@ -105,9 +139,14 @@ public class DisplayManager {
 			// Setup a key callback. It will be called every time a key is pressed, repeated or released.
 			// ------------ HANDLE key event ------------ //
 			
+			entities = Collections.synchronizedList(new ArrayList<Entity>());
+			
 			keyHandler = new KeyHandler();
 			
 			camera = new Camera(window, keyHandler, new Vector3f(0, 0, 0), 0, 0, 0);
+			camPos = camera.getPosition();
+			
+			usedCoords = new ArrayList<Vector3f>();
 			
 			
 			glfwSetKeyCallback(window, keyHandler.getCallback());
@@ -244,23 +283,109 @@ public class DisplayManager {
 			
 			RawModel raw_model = loader.loadToVao(vertices, indices, UVs);
 			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
-			TexturedModel model = new TexturedModel(raw_model, texture);
-			entity = new Entity(model, new Vector3f(0,0,-1), 0, 0, 0, 1);
+			model = new TexturedModel(raw_model, texture);
 
+			//Initalize 2 new Thread for rendering
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					
+					while (!glfwWindowShouldClose(window) ) {
+						updateTerrain();
+					}
+					
+				}
+				
+				private void updateTerrain() {
+					for(int x = (int) (camPos.x - RENDER_DISTANCE); x < camPos.x + RENDER_DISTANCE; x++) {
+						for(int z = (int) (camPos.z); z < camPos.z + RENDER_DISTANCE ; z++) {
+							
+							Vector3f coord = new Vector3f(x, 0 , z);
+							
+							if(!usedCoords.contains(coord)) {
+								entities.add(new Entity(model, coord, 0, 0, 0, 1));
+								usedCoords.add(coord);
+							}
+							
+							
+						}
+					}
+				}
+				
+			}).start();
 			
-		}
-		
-		public static void displayStuff() {
-			entity.increasePosition(0, 0, 0f);
-			entity.increaseScale(0f);
-			entity.increaseRotation(0f, 0.5f, 0f);
-			render(entity, shader);
+
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					
+					while (!glfwWindowShouldClose(window) ) {
+						updateTerrain();
+					}
+					
+				}
+				
+				private void updateTerrain() {
+					for(int x = (int) (camPos.x - RENDER_DISTANCE); x < camPos.x + RENDER_DISTANCE; x++) {
+						for(int z = (int) (camPos.z - RENDER_DISTANCE); z < camPos.z; z++) {
+							
+							Vector3f coord = new Vector3f(x, 0 , z);
+							
+							if(!usedCoords.contains(coord)) {
+								entities.add(new Entity(model, coord, 0, 0, 0, 1));
+								usedCoords.add(coord);
+							}
+							
+							
+						}
+					}
+				}
+				
+			}).start();
+			
+
+			// CLEAR TERRAIN THREAD
+			new Thread(new Runnable() {
+
+				@Override
+				public void run() {
+					
+					while (!glfwWindowShouldClose(window) ) {
+						clearTerrain();
+					}
+					
+				}
+				
+				private void clearTerrain() {
+					for(int i = 0; i < entities.size(); i++) {
+						Entity e = entities.get(i);
+						
+						int distX = (int) (camPos.x - e.getPosition().x);
+						int distZ = (int) (camPos.z - e.getPosition().z);
+						distX = Math.abs(distX);
+						distZ = Math.abs(distZ);
+						
+						if(distX > RENDER_DISTANCE && distZ > RENDER_DISTANCE) {
+							usedCoords.remove(e.getPosition());
+							entities.remove(i);
+						}
+						
+					}
+				}
+				
+				
+			}).start();
+			
 		}
 		
 		
 		public static void render(Entity entity, StaticShader shader) {
 			EntityRenderer.render(entity, shader);
 		}
+		
+		
 		
 		public static void createProjectionMatrix() {
 			projectionMatrix = new Matrix4f();
@@ -307,6 +432,9 @@ public class DisplayManager {
 				
 				//Move camera
 				camera.move();
+				camPos = camera.getPosition();
+				
+				//Update terrain --> in another thread (look above)
 				
 				//Shaders
 				shader.start();
@@ -315,7 +443,9 @@ public class DisplayManager {
 				shader.loadViewMatrix(camera);
 				
 				//display 2D/3D i guess stuff onto the screen
-				displayStuff();
+				for(int i = 0; i < entities.size(); i++) {
+					render(entities.get(i), shader);
+				}
 				
 				//Stop shader
 				shader.stop();
