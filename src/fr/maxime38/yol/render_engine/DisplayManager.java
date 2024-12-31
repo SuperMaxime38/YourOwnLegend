@@ -38,7 +38,9 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import org.lwjgl.Version;
@@ -62,6 +64,13 @@ import fr.maxime38.yol.utils.Vector3f;
 public class DisplayManager {
 	private static Loader loader;
 	private static StaticShader shader;
+	private static Map<TexturedModel, List<Entity>> entities2;
+	
+	//Thread
+	private static int fps = 0;
+	public int FPS = Integer.MAX_VALUE; // This one is used to unify speed (max value to not have speed 1000 for the 1st sec)
+	private static final int THREAD_REFRESH_RATE = 200;
+	
 	
 	//World
 	private static TexturedModel model;
@@ -90,7 +99,7 @@ public class DisplayManager {
 		@SuppressWarnings("unused")
 		private static GLFWKeyCallback keyCallback;
 
-		public static void run() {
+		public void run() {
 			System.out.println("["+Calendar.getInstance(TimeZone.getDefault()).getTime() + "]: Hello LWJGL " + Version.getVersion() + "!");
 
 			init();
@@ -114,7 +123,7 @@ public class DisplayManager {
 			System.exit(0);
 		}
 
-		private static void init() {
+		private void init() {
 			// Setup an error callback. The default implementation
 			// will print the error message in System.err.
 			GLFWErrorCallback.createPrint(System.err).set();
@@ -140,10 +149,11 @@ public class DisplayManager {
 			// ------------ HANDLE key event ------------ //
 			
 			entities = Collections.synchronizedList(new ArrayList<Entity>());
+			entities2 = new HashMap<TexturedModel, List<Entity>>();
 			
 			keyHandler = new KeyHandler();
 			
-			camera = new Camera(window, keyHandler, new Vector3f(0, 0, 0), 0, 0, 0);
+			camera = new Camera(this, window, keyHandler, new Vector3f(0, 0, 0), 0, 0, 0);
 			camPos = camera.getPosition();
 			
 			usedCoords = new ArrayList<Vector3f>();
@@ -290,9 +300,33 @@ public class DisplayManager {
 
 				@Override
 				public void run() {
+					double drawInterval = 1000000000/THREAD_REFRESH_RATE;
+					double delta = 0;
+					long lastTime = System.nanoTime();
+					long currentTime;
+					
+					long timer = 0;
 					
 					while (!glfwWindowShouldClose(window) ) {
-						updateTerrain();
+						
+						currentTime = System.nanoTime();
+						
+						delta += (currentTime - lastTime) / drawInterval;
+						timer+= (currentTime - lastTime);
+						lastTime = currentTime;
+						
+						
+						if(delta >= 1) {
+							updateTerrain();
+							delta--;
+						}
+						
+						
+						
+						
+						if(timer >= 1000000000) {
+							timer=0;
+						}
 					}
 					
 				}
@@ -320,9 +354,33 @@ public class DisplayManager {
 
 				@Override
 				public void run() {
+					double drawInterval = 1000000000/THREAD_REFRESH_RATE;
+					double delta = 0;
+					long lastTime = System.nanoTime();
+					long currentTime;
+					
+					long timer = 0;
 					
 					while (!glfwWindowShouldClose(window) ) {
-						updateTerrain();
+						
+						currentTime = System.nanoTime();
+						
+						delta += (currentTime - lastTime) / drawInterval;
+						timer+= (currentTime - lastTime);
+						lastTime = currentTime;
+						
+						
+						if(delta >= 1) {
+							updateTerrain();
+							delta--;
+						}
+						
+						
+						
+						
+						if(timer >= 1000000000) {
+							timer=0;
+						}
 					}
 					
 				}
@@ -351,9 +409,33 @@ public class DisplayManager {
 
 				@Override
 				public void run() {
+					double drawInterval = 1000000000/(THREAD_REFRESH_RATE);
+					double delta = 0;
+					long lastTime = System.nanoTime();
+					long currentTime;
+					
+					long timer = 0;
 					
 					while (!glfwWindowShouldClose(window) ) {
-						clearTerrain();
+						
+						currentTime = System.nanoTime();
+						
+						delta += (currentTime - lastTime) / drawInterval;
+						timer+= (currentTime - lastTime);
+						lastTime = currentTime;
+						
+						
+						if(delta >= 1) {
+							clearTerrain();
+							delta--;
+						}
+						
+						
+						
+						
+						if(timer >= 1000000000) {
+							timer=0;
+						}
 					}
 					
 				}
@@ -367,7 +449,7 @@ public class DisplayManager {
 						distX = Math.abs(distX);
 						distZ = Math.abs(distZ);
 						
-						if(distX > RENDER_DISTANCE && distZ > RENDER_DISTANCE) {
+						if(distX > RENDER_DISTANCE || distZ > RENDER_DISTANCE) {
 							usedCoords.remove(e.getPosition());
 							entities.remove(i);
 						}
@@ -380,9 +462,23 @@ public class DisplayManager {
 			
 		}
 		
+		public static void addEntity(Entity entity) {
+			TexturedModel model = entity.getModel();
+			entities2.computeIfAbsent(model, k -> new ArrayList<>()).add(entity);
+		}
 		
-		public static void render(Entity entity, StaticShader shader) {
-			EntityRenderer.render(entity, shader);
+		public static void render() {
+			//Shaders
+			shader.start();
+			
+			//Load camera view
+			shader.loadViewMatrix(camera);
+			
+			EntityRenderer.render(entities2);
+
+			//Stop shader
+			shader.stop();
+			entities2.clear();
 		}
 		
 		
@@ -407,11 +503,9 @@ public class DisplayManager {
 		
 		//to see fps
 		private static long timepassed;
-		private static long fps;
 
-		private static void loop() {
-			timepassed=System.nanoTime();;
-			fps=0;
+		private void loop() {
+			timepassed=System.nanoTime();
 
 			// Set the clear color
 			glClearColor(0.4f, 0.7f, 1.0f, 1f);
@@ -426,6 +520,7 @@ public class DisplayManager {
 				if(System.nanoTime() - timepassed >= 1000000000) {
 					timepassed = System.nanoTime();
 					System.out.println("FPS > "+fps);
+					FPS = fps;
 					fps=0;
 				}
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
@@ -436,19 +531,11 @@ public class DisplayManager {
 				
 				//Update terrain --> in another thread (look above)
 				
-				//Shaders
-				shader.start();
-				
-				//Load camera view
-				shader.loadViewMatrix(camera);
-				
 				//display 2D/3D i guess stuff onto the screen
 				for(int i = 0; i < entities.size(); i++) {
-					render(entities.get(i), shader);
+					addEntity(entities.get(i));
 				}
-				
-				//Stop shader
-				shader.stop();
+				render();
 				
 
 				glfwSwapBuffers(window); // swap the color buffers

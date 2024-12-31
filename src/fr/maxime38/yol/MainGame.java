@@ -9,7 +9,8 @@ public class MainGame {
 
 	public static void main(String[] args) {
 
-		DisplayManager.run();
+		DisplayManager displayManager = new DisplayManager();
+		displayManager.run();
 	}
 
 }

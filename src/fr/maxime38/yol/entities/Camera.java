@@ -6,6 +6,7 @@ import java.nio.DoubleBuffer;
 
 import org.lwjgl.BufferUtils;
 
+import fr.maxime38.yol.render_engine.DisplayManager;
 import fr.maxime38.yol.toolbox.KeyHandler;
 import fr.maxime38.yol.utils.Pair;
 import fr.maxime38.yol.utils.Vector3f;
@@ -15,12 +16,14 @@ public class Camera {
 	Vector3f position;
 	float rotaX, rotaY, rotaZ;
 
-	float speed = 0.1f;
+	float speed = 10f;
 	float turn_speed = 0.05f;
 	float moveAt = 0;
 	float strafe = 0;// Déplacement latéral initialisé à zéro
 	float up = 0;
-	
+
+
+	DisplayManager manager;
 	
 	KeyHandler handler;
 	
@@ -30,8 +33,9 @@ public class Camera {
     double deltaX, deltaY;
     Pair rotation;
 	
-	public Camera(long window, KeyHandler handler, Vector3f position, float rotaX, float rotaY, float rotaZ) {
+	public Camera(DisplayManager manager, long window, KeyHandler handler, Vector3f position, float rotaX, float rotaY, float rotaZ) {
 		super();
+		this.manager = manager;
 		this.handler = handler;
 		this.position = position;
 		this.rotaX = rotaX;
@@ -48,39 +52,37 @@ public class Camera {
 	
 	public void move() {
 		if(handler.isKeyPressed(GLFW_KEY_W)) {
-			moveAt = -speed;
+			moveAt = (float) (-(speed / manager.FPS)*1.2);
 		} else if(handler.isKeyPressed(GLFW_KEY_S)) {
-			moveAt = speed;
+			moveAt = (float) ((speed / manager.FPS)*1.2);
 		} else {
 			moveAt = 0;
 		}
 		
 		// Déplacement latéral
 	    if (handler.isKeyPressed(GLFW_KEY_A)) {
-	        strafe = -speed; // Aller à gauche
+	        strafe = -speed / manager.FPS; // Aller à gauche
 	    } else if (handler.isKeyPressed(GLFW_KEY_D)) {
-	        strafe = speed; // Aller à droite
+	        strafe = speed / manager.FPS; // Aller à droite
 	    } else {
 	    	strafe = 0;
 	    }
 	    
 	    //Déplacement vertical
 	    if (handler.isKeyPressed(GLFW_KEY_SPACE)) {
-	        up = -speed; // Aller à gauche
+	        up = -speed/manager.FPS; // Aller en haut
 	    } else if (handler.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
-	        up = speed; // Aller à droite
+	        up = speed/manager.FPS; // Aller en bas
 	    } else {
 	    	up = 0;
 	    }
-
-		
 		getMouseRotation(); //Updates mouse rotation
 		rotaX += -((float) rotation.getB() * turn_speed);
 		rotaY += (float) rotation.getA() * turn_speed;
 		
 		
 		float dx = (float) -(Math.sin(Math.toRadians(rotaY)) * moveAt - Math.cos(Math.toRadians(rotaY)) * strafe);
-		float dy = (float) (Math.sin(Math.toRadians(rotaX)) * moveAt - up);
+		float dy = (float) (Math.sin(Math.toRadians(rotaX)) * moveAt) - up;
 		float dz = (float) (Math.cos(Math.toRadians(rotaY)) * moveAt + Math.sin(Math.toRadians(rotaY)) * strafe);
 
 		position.x += dx;
