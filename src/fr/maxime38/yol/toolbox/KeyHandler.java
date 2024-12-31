@@ -32,10 +32,8 @@ public class KeyHandler {
 		    		case GLFW_KEY_W:
 		    			break;
 		    		case GLFW_KEY_E:
-		    			System.out.println("Opened inv");
 		    			break;
 		    		case GLFW_KEY_SPACE:
-		    			System.out.println("jumped ! yay");
 		    			break;
 		    		}
 		    	} else if(action == GLFW_RELEASE) {

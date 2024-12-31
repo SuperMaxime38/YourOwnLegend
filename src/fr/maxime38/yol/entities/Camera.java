@@ -1,8 +1,6 @@
 package fr.maxime38.yol.entities;
 
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
-import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
-import static org.lwjgl.glfw.GLFW.glfwGetCursorPos;
+import static org.lwjgl.glfw.GLFW.*;
 
 import java.nio.DoubleBuffer;
 
@@ -18,8 +16,11 @@ public class Camera {
 	float rotaX, rotaY, rotaZ;
 
 	float speed = 0.1f;
-	float turn_speed = 0.01f;
+	float turn_speed = 0.05f;
 	float moveAt = 0;
+	float strafe = 0;// Déplacement latéral initialisé à zéro
+	float up = 0;
+	
 	
 	KeyHandler handler;
 	
@@ -54,14 +55,33 @@ public class Camera {
 			moveAt = 0;
 		}
 		
+		// Déplacement latéral
+	    if (handler.isKeyPressed(GLFW_KEY_A)) {
+	        strafe = -speed; // Aller à gauche
+	    } else if (handler.isKeyPressed(GLFW_KEY_D)) {
+	        strafe = speed; // Aller à droite
+	    } else {
+	    	strafe = 0;
+	    }
+	    
+	    //Déplacement vertical
+	    if (handler.isKeyPressed(GLFW_KEY_SPACE)) {
+	        up = -speed; // Aller à gauche
+	    } else if (handler.isKeyPressed(GLFW_KEY_LEFT_SHIFT)) {
+	        up = speed; // Aller à droite
+	    } else {
+	    	up = 0;
+	    }
+
+		
 		getMouseRotation(); //Updates mouse rotation
 		rotaX += -((float) rotation.getB() * turn_speed);
 		rotaY += (float) rotation.getA() * turn_speed;
 		
 		
-		float dx = (float) -(Math.sin(Math.toRadians(rotaY)) * moveAt);
-		float dy = (float) (Math.sin(Math.toRadians(rotaX)) * moveAt);
-		float dz = (float) (Math.cos(Math.toRadians(rotaY)) * moveAt);
+		float dx = (float) -(Math.sin(Math.toRadians(rotaY)) * moveAt - Math.cos(Math.toRadians(rotaY)) * strafe);
+		float dy = (float) (Math.sin(Math.toRadians(rotaX)) * moveAt - up);
+		float dz = (float) (Math.cos(Math.toRadians(rotaY)) * moveAt + Math.sin(Math.toRadians(rotaY)) * strafe);
 
 		position.x += dx;
 		position.y += dy;
