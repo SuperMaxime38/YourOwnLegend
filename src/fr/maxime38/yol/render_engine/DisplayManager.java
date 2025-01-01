@@ -37,7 +37,6 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +52,7 @@ import org.lwjgl.system.MemoryStack;
 
 import fr.maxime38.yol.entities.Camera;
 import fr.maxime38.yol.entities.Entity;
+import fr.maxime38.yol.models.CubeModel;
 import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
@@ -69,14 +69,15 @@ public class DisplayManager {
 	//Thread
 	private static int fps = 0;
 	public int FPS = Integer.MAX_VALUE; // This one is used to unify speed (max value to not have speed 1000 for the 1st sec)
-	private static final int THREAD_REFRESH_RATE = 200;
+	private static final int THREAD_REFRESH_RATE = 300;
 	
 	
 	//World
 	private static TexturedModel model;
-	private static List<Entity> entities;
+	private static List<Chunk> chunks;
 	private static List<Vector3f> usedCoords;
 	private static final int RENDER_DISTANCE = 32; //32 blocks dude (PS: c'est un rayon)
+	private static final int CHUNK_SIZE = 16;
 	
 	//Handles keys
 	public static KeyHandler keyHandler;
@@ -148,7 +149,8 @@ public class DisplayManager {
 			// Setup a key callback. It will be called every time a key is pressed, repeated or released.
 			// ------------ HANDLE key event ------------ //
 			
-			entities = Collections.synchronizedList(new ArrayList<Entity>());
+			chunks = new ArrayList<Chunk>();
+			
 			entities2 = new HashMap<TexturedModel, List<Entity>>();
 			
 			keyHandler = new KeyHandler();
@@ -183,7 +185,7 @@ public class DisplayManager {
 			// Make the OpenGL context current
 			glfwMakeContextCurrent(window);
 			// Enable v-sync
-			glfwSwapInterval(1);
+			glfwSwapInterval(0);
 
 			// Make the window visible
 			glfwShowWindow(window);
@@ -212,91 +214,16 @@ public class DisplayManager {
 			
 			//Init rendering of stuff
 			loader = new Loader();
-			float[] vertices = {			
-					-0.5f,0.5f,-0.5f,	
-					-0.5f,-0.5f,-0.5f,	
-					0.5f,-0.5f,-0.5f,	
-					0.5f,0.5f,-0.5f,		
-					
-					-0.5f,0.5f,0.5f,	
-					-0.5f,-0.5f,0.5f,	
-					0.5f,-0.5f,0.5f,	
-					0.5f,0.5f,0.5f,
-					
-					0.5f,0.5f,-0.5f,	
-					0.5f,-0.5f,-0.5f,	
-					0.5f,-0.5f,0.5f,	
-					0.5f,0.5f,0.5f,
-					
-					-0.5f,0.5f,-0.5f,	
-					-0.5f,-0.5f,-0.5f,	
-					-0.5f,-0.5f,0.5f,	
-					-0.5f,0.5f,0.5f,
-					
-					-0.5f,0.5f,0.5f,
-					-0.5f,0.5f,-0.5f,
-					0.5f,0.5f,-0.5f,
-					0.5f,0.5f,0.5f,
-					
-					-0.5f,-0.5f,0.5f,
-					-0.5f,-0.5f,-0.5f,
-					0.5f,-0.5f,-0.5f,
-					0.5f,-0.5f,0.5f
-					
-			};
 			
-			float[] UVs = {
-					
-					0,0,
-					0,1,
-					1,1,
-					1,0,			
-					0,0,
-					0,1,
-					1,1,
-					1,0,			
-					0,0,
-					0,1,
-					1,1,
-					1,0,
-					0,0,
-					0,1,
-					1,1,
-					1,0,
-					0,0,
-					0,1,
-					1,1,
-					1,0,
-					0,0,
-					0,1,
-					1,1,
-					1,0
-
-
-					
-			};
 			
-			int[] indices = {
-					0,1,3,	
-					3,1,2,	
-					4,5,7,
-					7,5,6,
-					8,9,11,
-					11,9,10,
-					12,13,15,
-					15,13,14,	
-					16,17,19,
-					19,17,18,
-					20,21,23,
-					23,21,22
-			};
-			
-			RawModel raw_model = loader.loadToVao(vertices, indices, UVs);
+			RawModel raw_model = loader.loadToVao(CubeModel.vertices, CubeModel.indices, CubeModel.UVs);
 			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
 			model = new TexturedModel(raw_model, texture);
 
 			//Initalize 2 new Thread for rendering
 			new Thread(new Runnable() {
+				
+				Vector3f coord = new Vector3f(0, 0, 0);
 
 				@Override
 				public void run() {
@@ -332,13 +259,23 @@ public class DisplayManager {
 				}
 				
 				private void updateTerrain() {
-					for(int x = (int) (camPos.x - RENDER_DISTANCE); x < camPos.x + RENDER_DISTANCE; x++) {
-						for(int z = (int) (camPos.z); z < camPos.z + RENDER_DISTANCE ; z++) {
+					for(int x = (int) (camPos.x - RENDER_DISTANCE)/CHUNK_SIZE; x < (camPos.x + RENDER_DISTANCE)/CHUNK_SIZE; x++) {
+						for(int z = (int) (camPos.z - RENDER_DISTANCE)/CHUNK_SIZE; z < (camPos.z + RENDER_DISTANCE)/CHUNK_SIZE ; z++) {
 							
-							Vector3f coord = new Vector3f(x, 0 , z);
+							coord = new Vector3f(x * CHUNK_SIZE, 0 , z * CHUNK_SIZE);
 							
 							if(!usedCoords.contains(coord)) {
-								entities.add(new Entity(model, coord, 0, 0, 0, 1));
+								List<Entity> blocks = new ArrayList<Entity>();
+								
+								
+								for(int i = 0; i < CHUNK_SIZE; i++) {
+									for(int j = 0; j < CHUNK_SIZE; j++) {
+										blocks.add(new Entity(model, new Vector3f((x*16) + i, 0, (z*16)+j), 0, 0, 0, 1));
+									}
+								}
+								
+								chunks.add(new Chunk(blocks, coord));
+								
 								usedCoords.add(coord);
 							}
 							
@@ -346,117 +283,6 @@ public class DisplayManager {
 						}
 					}
 				}
-				
-			}).start();
-			
-
-			new Thread(new Runnable() {
-
-				@Override
-				public void run() {
-					double drawInterval = 1000000000/THREAD_REFRESH_RATE;
-					double delta = 0;
-					long lastTime = System.nanoTime();
-					long currentTime;
-					
-					long timer = 0;
-					
-					while (!glfwWindowShouldClose(window) ) {
-						
-						currentTime = System.nanoTime();
-						
-						delta += (currentTime - lastTime) / drawInterval;
-						timer+= (currentTime - lastTime);
-						lastTime = currentTime;
-						
-						
-						if(delta >= 1) {
-							updateTerrain();
-							delta--;
-						}
-						
-						
-						
-						
-						if(timer >= 1000000000) {
-							timer=0;
-						}
-					}
-					
-				}
-				
-				private void updateTerrain() {
-					for(int x = (int) (camPos.x - RENDER_DISTANCE); x < camPos.x + RENDER_DISTANCE; x++) {
-						for(int z = (int) (camPos.z - RENDER_DISTANCE); z < camPos.z; z++) {
-							
-							Vector3f coord = new Vector3f(x, 0 , z);
-							
-							if(!usedCoords.contains(coord)) {
-								entities.add(new Entity(model, coord, 0, 0, 0, 1));
-								usedCoords.add(coord);
-							}
-							
-							
-						}
-					}
-				}
-				
-			}).start();
-			
-
-			// CLEAR TERRAIN THREAD
-			new Thread(new Runnable() {
-
-				@Override
-				public void run() {
-					double drawInterval = 1000000000/(THREAD_REFRESH_RATE);
-					double delta = 0;
-					long lastTime = System.nanoTime();
-					long currentTime;
-					
-					long timer = 0;
-					
-					while (!glfwWindowShouldClose(window) ) {
-						
-						currentTime = System.nanoTime();
-						
-						delta += (currentTime - lastTime) / drawInterval;
-						timer+= (currentTime - lastTime);
-						lastTime = currentTime;
-						
-						
-						if(delta >= 1) {
-							clearTerrain();
-							delta--;
-						}
-						
-						
-						
-						
-						if(timer >= 1000000000) {
-							timer=0;
-						}
-					}
-					
-				}
-				
-				private void clearTerrain() {
-					for(int i = 0; i < entities.size(); i++) {
-						Entity e = entities.get(i);
-						
-						int distX = (int) (camPos.x - e.getPosition().x);
-						int distZ = (int) (camPos.z - e.getPosition().z);
-						distX = Math.abs(distX);
-						distZ = Math.abs(distZ);
-						
-						if(distX > RENDER_DISTANCE || distZ > RENDER_DISTANCE) {
-							usedCoords.remove(e.getPosition());
-							entities.remove(i);
-						}
-						
-					}
-				}
-				
 				
 			}).start();
 			
@@ -532,8 +358,22 @@ public class DisplayManager {
 				//Update terrain --> in another thread (look above)
 				
 				//display 2D/3D i guess stuff onto the screen
-				for(int i = 0; i < entities.size(); i++) {
-					addEntity(entities.get(i));
+				for(int i = 0; i < chunks.size(); i++) {
+					Chunk c = chunks.get(i);
+					
+					Vector3f origin = c.getOrigin();
+					
+					int distX = (int) (camPos.x - origin.x);
+					int distZ = (int) (camPos.z - origin.z);
+					distX = Math.abs(distX);
+					distZ = Math.abs(distZ);
+					
+					if(distX <= RENDER_DISTANCE && distZ <= RENDER_DISTANCE) {
+						for(int j = 0; j < c.getBlocks().size(); j++) {
+							addEntity(c.getBlocks().get(j));
+						}
+					}
+					
 				}
 				render();
 				

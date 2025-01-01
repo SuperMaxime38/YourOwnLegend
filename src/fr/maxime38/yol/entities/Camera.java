@@ -17,6 +17,7 @@ public class Camera {
 	float rotaX, rotaY, rotaZ;
 
 	float speed = 10f;
+	float speedMult = (float) 1.25;
 	float turn_speed = 0.05f;
 	float moveAt = 0;
 	float strafe = 0;// Déplacement latéral initialisé à zéro
@@ -52,9 +53,9 @@ public class Camera {
 	
 	public void move() {
 		if(handler.isKeyPressed(GLFW_KEY_W)) {
-			moveAt = (float) (-(speed / manager.FPS)*1.2);
+			moveAt = (float) (-(speed / manager.FPS)*1.25);
 		} else if(handler.isKeyPressed(GLFW_KEY_S)) {
-			moveAt = (float) ((speed / manager.FPS)*1.2);
+			moveAt = (float) ((speed / manager.FPS)*1.25);
 		} else {
 			moveAt = 0;
 		}
@@ -66,6 +67,11 @@ public class Camera {
 	        strafe = speed / manager.FPS; // Aller à droite
 	    } else {
 	    	strafe = 0;
+	    }
+	    
+	    if(handler.isKeyPressed(GLFW_KEY_LEFT_CONTROL)) {
+	    	moveAt*=speedMult;
+	    	strafe*=speedMult;
 	    }
 	    
 	    //Déplacement vertical

@@ -29,12 +29,6 @@ public class KeyHandler {
 		    			glfwSetWindowShouldClose(window, true);
 		    			System.out.println("Game closed by user (ESCAPE_KEY)");
 		    			break;
-		    		case GLFW_KEY_W:
-		    			break;
-		    		case GLFW_KEY_E:
-		    			break;
-		    		case GLFW_KEY_SPACE:
-		    			break;
 		    		}
 		    	} else if(action == GLFW_RELEASE) {
     				keysPressed.put(key, false);
