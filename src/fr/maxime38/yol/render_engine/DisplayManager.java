@@ -52,7 +52,7 @@ import org.lwjgl.system.MemoryStack;
 
 import fr.maxime38.yol.entities.Camera;
 import fr.maxime38.yol.entities.Entity;
-import fr.maxime38.yol.models.CubeModel;
+import fr.maxime38.yol.models.AtlasCubeModel;
 import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
@@ -76,7 +76,7 @@ public class DisplayManager {
 	private static TexturedModel model;
 	private static List<Chunk> chunks;
 	private static List<Vector3f> usedCoords;
-	private static final int RENDER_DISTANCE = 32; //32 blocks dude (PS: c'est un rayon)
+	private static final int RENDER_DISTANCE = 64; //32 blocks dude (PS: c'est un rayon)
 	private static final int CHUNK_SIZE = 16;
 	
 	//Handles keys
@@ -216,8 +216,8 @@ public class DisplayManager {
 			loader = new Loader();
 			
 			
-			RawModel raw_model = loader.loadToVao(CubeModel.vertices, CubeModel.indices, CubeModel.UVs);
-			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
+			RawModel raw_model = loader.loadToVao(AtlasCubeModel.vertices, AtlasCubeModel.indices, AtlasCubeModel.UVs);
+			ModelTexture texture = new ModelTexture(loader.loadTexture("grass.png"));
 			model = new TexturedModel(raw_model, texture);
 
 			//Initalize 2 new Thread for rendering
