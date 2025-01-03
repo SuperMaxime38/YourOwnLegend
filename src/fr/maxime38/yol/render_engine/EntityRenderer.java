@@ -53,7 +53,7 @@ public class EntityRenderer {
 				shader.loadTransformationMatrix(transformationMatrix);
 				
 
-				GL11.nglDrawElements(GL11.GL_TRIANGLES, model.getModel().getVertexCount(), GL11.GL_UNSIGNED_INT, 0);
+				GL11.glDrawArrays(GL11.GL_TRIANGLES, 0, model.getModel().getVertexCount());
 				
 			}
 			

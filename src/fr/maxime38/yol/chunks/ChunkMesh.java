@@ -112,6 +112,34 @@ public class ChunkMesh {
 	
 	private void populateLists() {
 		
+		for(int i = 0; i < vertices.size(); i++) {
+			positionsList.add(vertices.get(i).position.x);
+			positionsList.add(vertices.get(i).position.y);
+			positionsList.add(vertices.get(i).position.z);
+
+			UVsList.add(vertices.get(i).UVs.x);
+			UVsList.add(vertices.get(i).UVs.y);
+
+			normalsList.add(vertices.get(i).normals.x);
+			normalsList.add(vertices.get(i).normals.y);
+			normalsList.add(vertices.get(i).normals.z);
+		}
+
+		positions = new float[positionsList.size()];
+		UVs = new float[UVsList.size()];
+		normals = new float[normalsList.size()];
+
+		for (int i = 0; i < positionsList.size(); i++) {
+			positions[i] = positionsList.get(i);
+		}
+		for (int i = 0; i < UVsList.size(); i++) {
+			UVs[i] = UVsList.get(i);
+		}
+		for (int i = 0; i < normalsList.size(); i++) {
+			normals[i] = normalsList.get(i);
+		}
+		
+		
 	}
 	
 }

@@ -37,6 +37,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,9 +52,10 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 
 import fr.maxime38.yol.chunks.Chunk;
+import fr.maxime38.yol.chunks.ChunkMesh;
+import fr.maxime38.yol.cubes.Block;
 import fr.maxime38.yol.entities.Camera;
 import fr.maxime38.yol.entities.Entity;
-import fr.maxime38.yol.models.CubeModel;
 import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
@@ -75,7 +77,9 @@ public class DisplayManager {
 	
 	//World
 	private static TexturedModel model;
-	private static List<Chunk> chunks;
+	private static Entity entity;
+	private static List<Entity> entities;
+	private static List<ChunkMesh> chunks;
 	private static List<Vector3f> usedCoords;
 	private static final int RENDER_DISTANCE = 64; //32 blocks dude (PS: c'est un rayon)
 	private static final int CHUNK_SIZE = 16;
@@ -150,7 +154,8 @@ public class DisplayManager {
 			// Setup a key callback. It will be called every time a key is pressed, repeated or released.
 			// ------------ HANDLE key event ------------ //
 			
-			chunks = new ArrayList<Chunk>();
+			chunks = Collections.synchronizedList(new ArrayList<ChunkMesh>());
+			entities = new ArrayList<Entity>();
 			
 			entities2 = new HashMap<TexturedModel, List<Entity>>();
 			
@@ -215,11 +220,6 @@ public class DisplayManager {
 			
 			//Init rendering of stuff
 			loader = new Loader();
-			
-			
-			RawModel raw_model = loader.loadToVao(CubeModel.vertices,CubeModel.indices, CubeModel.UVs);
-			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
-			model = new TexturedModel(raw_model, texture);
 
 			//Initalize 2 new Thread for rendering
 			new Thread(new Runnable() {
@@ -266,16 +266,18 @@ public class DisplayManager {
 							coord = new Vector3f(x * CHUNK_SIZE, 0 , z * CHUNK_SIZE);
 							
 							if(!usedCoords.contains(coord)) {
-								List<Entity> blocks = new ArrayList<Entity>();
+								List<Block> blocks = new ArrayList<Block>();
 								
 								
 								for(int i = 0; i < CHUNK_SIZE; i++) {
 									for(int j = 0; j < CHUNK_SIZE; j++) {
-										blocks.add(new Entity(model, new Vector3f((x*16) + i, 0, (z*16)+j), 0, 0, 0, 1));
+										blocks.add(new Block(i, 0, j, Block.BlockType.DIRT));
 									}
 								}
 								
-								chunks.add(new Chunk(blocks, coord));
+								Chunk chunk = new Chunk(blocks, new Vector3f(x*CHUNK_SIZE, 0, z*CHUNK_SIZE));
+								
+								chunks.add(new ChunkMesh(chunk));
 								
 								usedCoords.add(coord);
 							}
@@ -283,6 +285,7 @@ public class DisplayManager {
 							
 						}
 					}
+					
 				}
 				
 			}).start();
@@ -338,7 +341,7 @@ public class DisplayManager {
 			glClearColor(0.4f, 0.7f, 1.0f, 1f);
 			
 			
-			
+			int index=0;
 
 			// Run the rendering loop until the user has attempted to close
 			// the window or has pressed the ESCAPE key.
@@ -359,10 +362,22 @@ public class DisplayManager {
 				//Update terrain --> in another thread (look above)
 				
 				//display 2D/3D i guess stuff onto the screen
-				for(int i = 0; i < chunks.size(); i++) {
-					Chunk c = chunks.get(i);
+				
+				if(index < chunks.size()) {
+					RawModel raw_model = loader.loadToVao(chunks.get(index).positions, chunks.get(index).UVs);
+					ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
+					model = new TexturedModel(raw_model, texture);
+					entity = new Entity(model, chunks.get(index).chunk.origin, 0, 0, 0, 1);
+					entities.add(entity);
 					
-					Vector3f origin = c.getOrigin();
+					index++;
+				}
+				
+				
+				
+				for(int i = 0; i < entities.size(); i++) {
+					
+					Vector3f origin = entities.get(i).getPosition();
 					
 					int distX = (int) (camPos.x - origin.x);
 					int distZ = (int) (camPos.z - origin.z);
@@ -370,9 +385,7 @@ public class DisplayManager {
 					distZ = Math.abs(distZ);
 					
 					if(distX <= RENDER_DISTANCE && distZ <= RENDER_DISTANCE) {
-						for(int j = 0; j < c.getBlocks().size(); j++) {
-							addEntity(c.getBlocks().get(j));
-						}
+						addEntity(entities.get(i));
 					}
 					
 				}

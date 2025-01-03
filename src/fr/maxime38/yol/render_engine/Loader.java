@@ -16,7 +16,7 @@ public class Loader {
 	static List<Integer> vaos = new ArrayList<Integer>();
 	static List<Integer> vbos = new ArrayList<Integer>();
 	static List<Integer> textures = new ArrayList<Integer>();
-	
+
 	public RawModel loadToVao(float[] vertices, int[] indices, float[] UVs) {
 		int vaoID = createVAO();
 
@@ -28,6 +28,18 @@ public class Loader {
 		GL30.glBindVertexArray(0);
 		
 		return new RawModel(vaoID, indices.length);
+	}
+	
+	public RawModel loadToVao(float[] vertices, float[] UVs) {
+		int vaoID = createVAO();
+
+		vaos.add(vaoID);
+
+		storeDataInAttributeList(vertices, 0, 3);
+		storeDataInAttributeList(UVs, 1, 2);
+		GL30.glBindVertexArray(0);
+		
+		return new RawModel(vaoID, vertices.length);
 	}
 	
 	private int createVAO() {
