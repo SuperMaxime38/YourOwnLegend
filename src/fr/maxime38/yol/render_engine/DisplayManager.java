@@ -50,9 +50,10 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 
+import fr.maxime38.yol.chunks.Chunk;
 import fr.maxime38.yol.entities.Camera;
 import fr.maxime38.yol.entities.Entity;
-import fr.maxime38.yol.models.AtlasCubeModel;
+import fr.maxime38.yol.models.CubeModel;
 import fr.maxime38.yol.models.RawModel;
 import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
@@ -216,8 +217,8 @@ public class DisplayManager {
 			loader = new Loader();
 			
 			
-			RawModel raw_model = loader.loadToVao(AtlasCubeModel.vertices, AtlasCubeModel.indices, AtlasCubeModel.UVs);
-			ModelTexture texture = new ModelTexture(loader.loadTexture("grass.png"));
+			RawModel raw_model = loader.loadToVao(CubeModel.vertices,CubeModel.indices, CubeModel.UVs);
+			ModelTexture texture = new ModelTexture(loader.loadTexture("dirt.png"));
 			model = new TexturedModel(raw_model, texture);
 
 			//Initalize 2 new Thread for rendering
