@@ -27,10 +27,12 @@ import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
+import static org.lwjgl.glfw.GLFW.glfwSetWindowSizeCallback;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
+import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
@@ -47,6 +49,7 @@ import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.GLFWWindowSizeCallback;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
@@ -61,6 +64,7 @@ import fr.maxime38.yol.models.TexturedModel;
 import fr.maxime38.yol.shaders.StaticShader;
 import fr.maxime38.yol.textures.ModelTexture;
 import fr.maxime38.yol.toolbox.KeyHandler;
+import fr.maxime38.yol.toolbox.PerlinNoiseGenerator;
 import fr.maxime38.yol.utils.Matrix4f;
 import fr.maxime38.yol.utils.Vector3f;
 
@@ -81,7 +85,7 @@ public class DisplayManager {
 	private static List<Entity> entities;
 	private static List<ChunkMesh> chunks;
 	private static List<Vector3f> usedCoords;
-	private static final int RENDER_DISTANCE = 64; //32 blocks dude (PS: c'est un rayon)
+	private static final int RENDER_DISTANCE = 128; //32 blocks dude (PS: c'est un rayon)
 	private static final int CHUNK_SIZE = 16;
 	
 	//Handles keys
@@ -167,6 +171,13 @@ public class DisplayManager {
 			usedCoords = new ArrayList<Vector3f>();
 			
 			
+			glfwSetWindowSizeCallback(window, new GLFWWindowSizeCallback() {
+		        @Override
+		        public void invoke(long window, int argWidth, int argHeight) {
+		            resizeWindow(argWidth, argHeight);
+		        }
+			});
+			
 			glfwSetKeyCallback(window, keyHandler.getCallback());
 
 			// Get the thread stack and push a new frame
@@ -220,6 +231,8 @@ public class DisplayManager {
 			
 			//Init rendering of stuff
 			loader = new Loader();
+			
+			PerlinNoiseGenerator generator = new PerlinNoiseGenerator();
 
 			//Initalize 2 new Thread for rendering
 			new Thread(new Runnable() {
@@ -250,8 +263,6 @@ public class DisplayManager {
 						}
 						
 						
-						
-						
 						if(timer >= 1000000000) {
 							timer=0;
 						}
@@ -271,7 +282,7 @@ public class DisplayManager {
 								
 								for(int i = 0; i < CHUNK_SIZE; i++) {
 									for(int j = 0; j < CHUNK_SIZE; j++) {
-										blocks.add(new Block(i, 0, j, Block.BlockType.DIRT));
+										blocks.add(new Block(i, (int) generator.generateHeight(i + (x*CHUNK_SIZE), j + (z*CHUNK_SIZE)), j, Block.BlockType.DIRT));
 									}
 								}
 								
@@ -290,6 +301,12 @@ public class DisplayManager {
 				
 			}).start();
 			
+		}
+		
+		private void resizeWindow(int argWidth, int argHeight) {
+		    glViewport(0, 0, argWidth,argHeight);
+
+		    createProjectionMatrix();
 		}
 		
 		public static void addEntity(Entity entity) {
